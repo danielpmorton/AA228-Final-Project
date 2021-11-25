@@ -3,22 +3,23 @@ using CSV
 using Statistics
 using Random
 
-
-function updateRanks(lineup,rankings,weeknum,data)
-
-
-
-    return new_lineup, new_rankings
-end
-
+"""
+ This function can be used for exploration.
+ It currently generates a random lineup and calculates its performance for
+ a random week in a given year.
+ It still needs the actions and rewards to be defined.
+ It also might need to be checked for compatibility with Daniel's functions.
+"""
 function simulateRandomLineup(year)
 
+    # input data
     weeklydata = createWeeklyData(year)
 
     QBlist = []
     RBlist = []
     WRlist = []
 
+    # get list of player names for each position to use for sorting
     for i = 1:size(weeklydata)
         if weeklydata[i].postion = "QB"
             push!(QBlist,weeklydata[i].player)
@@ -28,6 +29,7 @@ function simulateRandomLineup(year)
             push!(WRlist,weeklydata[i].player)
     end
 
+    # pick random subset of 10 players at each position
     shuffleQBlist = randcycle(length(QBlist))
     shuffleRBlist = randcycle(length(RBlist))
     shuffleWRlist = randcycle(length(WRlist))
@@ -36,6 +38,7 @@ function simulateRandomLineup(year)
     RBsubset = RBlist[shuffleRBList[1:10]]
     WRsubset = WRlist[shuffleWRList[1:10]]
 
+    # random lineup
     QBstart = rand(1:length(QBsubset))
     RBstart = rand(1:length(RBsubset))
     WRstart = rand(1:length(WRsubset))
@@ -44,6 +47,7 @@ function simulateRandomLineup(year)
     RBdata = []
     WRdata = []
 
+    # generate data subsets
     for i = 1:10
             QBidx = findall(weeklydata.player .== QBsubset[i])
             RBidx = findall(weeklydata.player .== RBsubset[i])
@@ -54,14 +58,17 @@ function simulateRandomLineup(year)
             push!(WRdata,weeklydata[WRidx])
     end
 
+    # calculate rankings
     startweek = rand(2:17)
     sort!(QBdata,[2+startweek],rev = true)
     sort!(RBdata,[2+startweek],rev = true)
     sort!(WRdata,[2+startweek],rev = true)
 
+    # set lineup
     lineup_start = [QBstart RBstart WRstart]
     names_start = [QBdata[QBstart].player RBdata[RBstart].player WRdata[WRstart].player]
 
+     # calculate first week fantasy point totals
     points_start = QBdata[QBstart,2+startweek] + RBdata[RBstart,2+startweek] + WRdata[WRstart,2+startweek]
 
     action = rand(1:7)
@@ -96,16 +103,19 @@ function simulateRandomLineup(year)
             names_new = names_start
     end
 
+    # create new rankings
     sort!(QBdata,[2+startweek+1],rev = true)
     sort!(RBdata,[2+startweek+1],rev = true)
     sort!(WRdata,[2+startweek+1],rev = true)
 
+    # create new lineup state
     QBnew = findall(QBdata.player .== names_new[1])
     RBnew = findall(RBdata.player .== names_new[2])
     WRnew = findall(WRdata.player .== names_new[3])
 
     lineup_new = [QBnew RBnew WRnew]
 
+    # calculate new fantasy point totals
     points_new = QBdata[QBnew,2+startweek+1] + RBdata[RBnew,2+startweek+1] + WRdata[WRnew,2+startweek+1]
 
 
