@@ -21,11 +21,11 @@ function simulateRandomLineup(year)
 
     # get list of player names for each position to use for sorting
     for i = 1:size(weeklydata)
-        if weeklydata[i].postion = "QB"
+        if weeklydata[i].postion == "QB"
             push!(QBlist,weeklydata[i].player)
-        elseif weeklydata[i].postion = "RB"
+    elseif weeklydata[i].postion == "RB"
             push!(RBlist,weeklydata[i].player)
-        elseif weeklydata[i].postion = "WR"
+    elseif weeklydata[i].postion == "WR"
             push!(WRlist,weeklydata[i].player)
     end
 
@@ -122,4 +122,49 @@ function simulateRandomLineup(year)
     # need to add reward function here
     # need to decide which vars to return
 
+end
+
+# Generates dataframe with all states
+function allStates()
+        states = DataFrame(QB = [], RB = [], WR = [])
+        for i = 1:10
+                for j = 1:10
+                        for k = 1:10
+                                state = [i; j; k]
+                                push!(states,state)
+                        end
+                end
+        end
+        return states
+end
+
+# Generates dataframe containing random Policy (7 actions)
+function randomPolicy()
+        states = allStates()
+        actions = []
+        for i = 1:size(states,1)
+                act = rand(1:7)
+                push!(actions,act)
+        end
+        policy = states
+        policy.action = actions
+        return policy
+end
+
+"""
+step through each week of season and
+calculate total fantasy points given a policy
+*still in progress, need to incorporate Daniel's functions
+"""
+function simulateSeason(policy,year)
+        #randomlineup
+        weeklydata = createWeeklyData(year)
+        points = []
+        
+        for i=1:17
+                score = QBdata[QBnew,2+i] + RBdata[RBnew,2+i] + WRdata[WRnew,2+i]
+                points = push!(points,score)
+        end
+
+        return points
 end

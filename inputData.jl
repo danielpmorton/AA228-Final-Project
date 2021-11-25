@@ -1,6 +1,9 @@
 using CSV
 using DataFrames
 
+"""
+might be useful to clean data to eliminate bye/injury weeks
+"""
 
 function rawInput(infile)
     rawWeekly = DataFrame(CSV.File(infile))
