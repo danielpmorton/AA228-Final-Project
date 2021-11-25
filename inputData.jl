@@ -62,7 +62,7 @@ function selectGroup(subnames,weeklydata)
     subGroup = weeklydata
     deleteIndex = []
 
-    for i = 1:size(weeklydata,1)
+    for i = 1:size(subGroup,1)
         exclude = true
         for j = 1:length(subnames)
             if weeklydata.player[i] == subnames[j]
@@ -97,3 +97,4 @@ WRs = ["Michael Thomas","Keenan Allen","DeAndre Hopkins","Julio Jones","Allen Ro
 subsetNames = vcat(QBs, RBs, WRs)
 
 subset2019 = selectGroup(subsetNames,weekly2019)
+subset2018 = selectGroup(subsetNames,weekly2018)
