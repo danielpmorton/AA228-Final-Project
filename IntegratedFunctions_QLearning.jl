@@ -83,7 +83,7 @@ There will be a Main function that will loop through every week of a season and 
             #NEXT STATE_______________________________________________________________________________________
                 #Recalculate the state based on new rankings, Daniel's functions already do this:
                     #getPlayerRankings (input: NextStatePlayerTags)
-                    
+
                     NextState = makeState  
 
             #REWARD____________________________________________________________________________________________
@@ -136,8 +136,8 @@ There will be a Main function that will loop through every week of a season and 
 
         #Create Dictionaries for each position with an integer key and player name value
         QB_Players = Dict(i => QBsubset[i] for i=1:size(QBsubset,1))
-        RB_Players = Dict(i => RBsubset[i] for i=1:size(RBsubset,1))
-        WR_Players = Dict(i => WRsubset[i] for i=1:size(WRsubset,1))
+        RB_Players = Dict(i + 8 => RBsubset[i] for i=1:size(RBsubset,1))
+        WR_Players = Dict(i + 16 => WRsubset[i] for i=1:size(WRsubset,1))
 
         QB_Players, RB_Players, WR_Players
     end
@@ -148,7 +148,21 @@ There will be a Main function that will loop through every week of a season and 
         return PlayerState
     end 
 
-    function Rollout(YearFileLocation,weekNum, QB_Players, RB_Players, WR_Players)
+    function Rollout(YearFileLocation, weekNum, QB_Players, RB_Players, WR_Players)
+        FilePath = YearFileLocation * "/week" * string(weekNum) * ".csv"
+
+        #Step 1: Load all data into dataframe
+        rawData = CSV.read(FilePath, DataFrame)
+
+        #Step 2: We only need Player, Position, and Points columns
+        limitedData = DataFrame(player = rawData.Player, position = rawData.Pos, points = rawData.StandardFantasyPoints)
+
+        #Step 3: We only care about the subset of players in QB_Players, RB_Players and WR_Players 
+        #merge player dictionaries into 1 dictionary with all players and tags
+        Players = merge(QB_Players,RB_Players,WR_Players)
+        
+
+
     end
 
 
