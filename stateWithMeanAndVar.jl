@@ -1,4 +1,10 @@
 ```
+UPDATE **************
+- reducing the number of players per position to 8
+- reducing the definition of mean and variance to just "above" vs "below" average
+
+
+
 CODE OVERVIEW:
 
 Main question: "How do we define the state of our Q-learning model"
@@ -24,18 +30,18 @@ using CSV # Check if actually using this ones
 using Statistics
 using Random
 
-
+# NOTE: remember to update these with the reduced 8-person/position league
 # Define global variables
 global positions= ["QB", "RB", "WR"]
-global QBs = ["Jared Goff","Tom Brady","Dak Prescott","Deshaun Watson","Philip Rivers","Russell Wilson","Aaron Rodgers","Kirk Cousins","Matt Ryan","Derek Carr"]
-global RBs = ["Ezekiel Elliott","Nick Chubb","Christian McCaffrey","Dalvin Cook","Chris Carson","Leonard Fournette","Mark Ingram","Todd Gurley","Alvin Kamara","Aaron Jones"]
-global WRs = ["Michael Thomas","Keenan Allen","DeAndre Hopkins","Julio Jones","Allen Robinson","Tyler Lockett","Stefon Diggs","Chris Godwin","Mike Evans","Jarvis Landry"]
+global QBs = ["Jared Goff","Tom Brady","Dak Prescott","Deshaun Watson","Philip Rivers","Russell Wilson","Aaron Rodgers","Kirk Cousins"]
+global RBs = ["Ezekiel Elliott","Nick Chubb","Christian McCaffrey","Dalvin Cook","Chris Carson","Leonard Fournette","Mark Ingram","Todd Gurley"]
+global WRs = ["Michael Thomas","Keenan Allen","DeAndre Hopkins","Julio Jones","Allen Robinson","Tyler Lockett","Stefon Diggs","Chris Godwin"]
 
 
 # Build the main function here, run it at the very end of the file
 function main()
-    lineup = namesToLineup("Tom Brady", "Christian McCaffrey", "Mike Evans") # OR: lineup = makeRandomLineup(QBs, RBs, WRs)
-    performanceStats = compareLineupToLeague(lineup, data, nSD=1)
+    lineup = namesToLineup("Tom Brady", "Christian McCaffrey", "Chris Godwin") # OR: lineup = makeRandomLineup(QBs, RBs, WRs)
+    performanceStats = compareLineupToLeague(lineup, data)
     ranks = getPlayerRankings(lineup, currentWeekData)
     state = makeState(ranks, performanceStats)
     print(state)
@@ -110,56 +116,13 @@ function getLineupPerformanceData(lineup, data)
     return stats
 end
 
-function evaluateMean(playerMean, meanOfMean, varOfMean, nSD)
-    ```
-    Description: Output 0,1,2 for low,average,high mean in performance wrt the league for that position
-    Inputs: playerMean: Player's mean weekly score (scalar)
-            meanOfMean: League average per-player score for that position (scalar)
-            varOfMean: Variance in league average per-player score for that position(scalar)
-            nSD: Number of standard deviations to define the cutoff points
-    Outputs: 0, 1, or 2
-    ```
-    if playerMean > meanOfMean + nSD*sqrt(varOfMean) # High mean performance
-        meanStat = 2
-    else if playerMean < meanOfMean - nSD*sqrt(varOfMean) # Low mean performance
-        meanStat = 0
-    else # Average mean performance
-        meanStat = 1
-    end
-    return meanStat
-end
-
-function evaluateVariance(playerVar, meanOfVar, varOfVar, nSD)
-    ```
-    Description: Output 0,1,2 for low,average,high variance in performance wrt the league for that position
-    Inputs: playerVar: Variance in player's weekly score (scalar)
-            meanOfVar: League average variance for that position (scalar)
-            varOfVar: Variance in league average variance for that position (scalar)
-            nSD: Number of standard deviations to define the cutoff points
-    Outputs: 0, 1, or 2
-    ```
-    if playerVar > meanOfVar + nSD*sqrt(varOfVar) # High variance in performance
-        varStat = 2
-    else if playerVar < meanOfVar - nSD*sqrt(varOfVar) # Low variance in performance
-        varStat = 0
-    else # Average variance in performance
-        varStat = 1
-    end
-    return varStat
-end
-
-function compareLineupToLeague(lineup, data, nSD=1)
+function compareLineupToLeague(lineup, data)
     ```
     Description: Compares each player's mean and variance to the league data and outputs a single value describing this
-                 The "low", "medium", and "high" parameters are defined by standard deviations above/below the league mean
-                 0: "low" -- player mean is >nSD SD below the league mean
-                 1: "average" -- player mean is within nSD SD of the league mean
-                 2: "high" -- player mean is >nSD SD above the league mean
-                 This process is repeated for the variance as compared to the league
+                 The "below", "above"parameters are defined by being below or above the league average points or average variance in points
     Inputs: lineup: Dictionary containing the position and the associated name of the player
             data: The dataframe containing all of the data for the league (based on Walter's code) 
-            nSD: The number of standard deviations to define the cutoffs in performance (default = 1)
-    Outputs: Dictionary mapping "position" => (meanStat, varStat) which will be ((0, 1, or 2), (0, 1, or 2))
+    Outputs: Dictionary mapping "position" => (meanStat, varStat) which will be ((0 or 1), (0 or 1))
     ```
     
     leagueData = getLeaguePerformanceData(data) # Dictionary with ("Position", (meanOfMean, meanOfVar, varOfMean, varOfVar))
@@ -171,9 +134,9 @@ function compareLineupToLeague(lineup, data, nSD=1)
         # Load data
         playerMean, playerVar = stats
         meanOfMean, meanOfVar, varOfMean, varOfVar = leagueData[pos]
-        # Getting a value for the relative mean and variance of a player = (0,1,2) for (low, average, high)
-        meanStat = evaluateMean(playerMean, meanOfMean, varOfMean, nSD)
-        varState = evaluateVariance(playerVar, meanOfVar, varOfVar, nSD)
+        # Getting a value for the relative mean and variance of a player = (0,1) for (below,above)
+        playerMean > meanOfMean ? meanStat = 1 : meanStat = 0
+        playerVar > meanOfVar ? varStat = 1 : varStat = 0
         # Save this to a dictionary: "position" => 2-entry tuple containing the 0,1,2 parameter for mean and variance
         performanceStats[pos] = (meanStat, varStat)
     end
@@ -192,6 +155,7 @@ end
 
 # NOTE THE UNIQUE INPUT FORMAT IN THIS ONE
 # Assumes we have a table like the others but with only one column of week data called "points" ****
+# player, position, points
 function getPlayerRankings(lineup, currentWeekData)
     ```
     Description: Takes the most recent weekly data, ranks the players, and assigns a rank to the players in your lineup
@@ -236,17 +200,18 @@ function makeState(ranks, performanceStats)
     Outputs: state -- a numerical value defining the 9 information components we are looking at
                    -> [QB_rank, RB_rank, WR_rank, QB_mean, RB_mean, WR_mean, QB_variance, RB_variance, WR_variance]
     ```
-    # Combine all of these numerical values as strings first -- outputs a 9-digit string
-    # Note: for the rank, since we have 10 players, I subtracted one so this goes from 0 to 9 (instead of worrying about what happens when we have 2 digits in a rank)
-    strung = string(ranks["QB"]-1) * string(ranks["RB"]-1) * string(ranks["WR"]-1) * 
-        string(performanceStats["QB"][1]) * string(performanceStats["RB"][1]) * string(performanceStats["WR"][1]) * 
-            string(performanceStats["QB"][2]) * string(performanceStats["RB"][2]) * string(performanceStats["WR"][2])
-    
-    # Un-string this value into a numerical value
-    state = parse(Int64, strung)
-
-    # Note: when parsing this, any of the leading terms being 0 will not be represented! But I think this will be ok
-
+    # Combine our info together into a 15-bit binary string
+    # First, convert the ranks for each player into a binary number
+    QBrank_binary = digits((ranks["QB"]-1), base=2, pad=3) |> reverse
+    RBrank_binary = digits((ranks["RB"]-1), base=2, pad=3) |> reverse
+    WRrank_binary = digits((ranks["WR"]-1), base=2, pad=3) |> reverse
+    # Now, combine these all together in a string
+    # Note: the performance stats are 0 or 1 now and don't need to be converted to binary
+    bitstring = string(QBrank_binary) * string(RBrank_binary) * string(WRrank_binary) * 
+                string(performanceStats["QB"][1]) * string(performanceStats["RB"][1]) * string(performanceStats["WR"][1]) * 
+                string(performanceStats["QB"][2]) * string(performanceStats["RB"][2]) * string(performanceStats["WR"][2])
+    # Un-binarify this value
+    state = parse(Int, bitstring, base=2)
     return state
 end
 

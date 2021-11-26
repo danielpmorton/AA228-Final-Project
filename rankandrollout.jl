@@ -23,10 +23,17 @@ function simulateRandomLineup(year)
     for i = 1:size(weeklydata)
         if weeklydata[i].postion == "QB"
             push!(QBlist,weeklydata[i].player)
+<<<<<<< HEAD
     elseif weeklydata[i].postion == "RB"
             push!(RBlist,weeklydata[i].player)
     elseif weeklydata[i].postion == "WR"
+=======
+        elseif weeklydata[i].postion == "RB"
+            push!(RBlist,weeklydata[i].player)
+        elseif weeklydata[i].postion == "WR"
+>>>>>>> d3ea4473a60e42db621bc4aa0a30bdb28f9b8ae5
             push!(WRlist,weeklydata[i].player)
+        end
     end
 
     # pick random subset of 10 players at each position
@@ -34,9 +41,9 @@ function simulateRandomLineup(year)
     shuffleRBlist = randcycle(length(RBlist))
     shuffleWRlist = randcycle(length(WRlist))
 
-    QBsubset = QBlist[shuffleQBList[1:10]]
-    RBsubset = RBlist[shuffleRBList[1:10]]
-    WRsubset = WRlist[shuffleWRList[1:10]]
+    QBsubset = QBlist[shuffleQBlist[1:10]]
+    RBsubset = RBlist[shuffleRBlist[1:10]]
+    WRsubset = WRlist[shuffleWRlist[1:10]]
 
     # random lineup
     QBstart = rand(1:length(QBsubset))
@@ -124,6 +131,7 @@ function simulateRandomLineup(year)
 
 end
 
+<<<<<<< HEAD
 # Generates dataframe with all states
 function allStates()
         states = DataFrame(QB = [], RB = [], WR = [])
@@ -168,3 +176,5 @@ function simulateSeason(policy,year)
 
         return points
 end
+=======
+>>>>>>> d3ea4473a60e42db621bc4aa0a30bdb28f9b8ae5
