@@ -21,17 +21,11 @@ function simulateRandomLineup(year)
 
     # get list of player names for each position to use for sorting
     for i = 1:size(weeklydata)
-        if weeklydata[i].postion == "QB"
+        if weeklydata[i].position == "QB"
             push!(QBlist,weeklydata[i].player)
-<<<<<<< HEAD
-    elseif weeklydata[i].postion == "RB"
+        elseif weeklydata[i].position == "RB"
             push!(RBlist,weeklydata[i].player)
-    elseif weeklydata[i].postion == "WR"
-=======
-        elseif weeklydata[i].postion == "RB"
-            push!(RBlist,weeklydata[i].player)
-        elseif weeklydata[i].postion == "WR"
->>>>>>> d3ea4473a60e42db621bc4aa0a30bdb28f9b8ae5
+        elseif weeklydata[i].position == "WR"
             push!(WRlist,weeklydata[i].player)
         end
     end
@@ -131,7 +125,6 @@ function simulateRandomLineup(year)
 
 end
 
-<<<<<<< HEAD
 # Generates dataframe with all states
 function allStates()
         states = DataFrame(QB = [], RB = [], WR = [])
@@ -168,7 +161,7 @@ function simulateSeason(policy,year)
         #randomlineup
         weeklydata = createWeeklyData(year)
         points = []
-        
+
         for i=1:17
                 score = QBdata[QBnew,2+i] + RBdata[RBnew,2+i] + WRdata[WRnew,2+i]
                 points = push!(points,score)
@@ -176,5 +169,3 @@ function simulateSeason(policy,year)
 
         return points
 end
-=======
->>>>>>> d3ea4473a60e42db621bc4aa0a30bdb28f9b8ae5
