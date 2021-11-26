@@ -21,12 +21,13 @@ function simulateRandomLineup(year)
 
     # get list of player names for each position to use for sorting
     for i = 1:size(weeklydata)
-        if weeklydata[i].postion = "QB"
+        if weeklydata[i].postion == "QB"
             push!(QBlist,weeklydata[i].player)
-        elseif weeklydata[i].postion = "RB"
+        elseif weeklydata[i].postion == "RB"
             push!(RBlist,weeklydata[i].player)
-        elseif weeklydata[i].postion = "WR"
+        elseif weeklydata[i].postion == "WR"
             push!(WRlist,weeklydata[i].player)
+        end
     end
 
     # pick random subset of 10 players at each position
@@ -34,9 +35,9 @@ function simulateRandomLineup(year)
     shuffleRBlist = randcycle(length(RBlist))
     shuffleWRlist = randcycle(length(WRlist))
 
-    QBsubset = QBlist[shuffleQBList[1:10]]
-    RBsubset = RBlist[shuffleRBList[1:10]]
-    WRsubset = WRlist[shuffleWRList[1:10]]
+    QBsubset = QBlist[shuffleQBlist[1:10]]
+    RBsubset = RBlist[shuffleRBlist[1:10]]
+    WRsubset = WRlist[shuffleWRlist[1:10]]
 
     # random lineup
     QBstart = rand(1:length(QBsubset))
@@ -123,3 +124,4 @@ function simulateRandomLineup(year)
     # need to decide which vars to return
 
 end
+
