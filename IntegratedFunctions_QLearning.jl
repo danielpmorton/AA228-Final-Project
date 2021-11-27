@@ -14,7 +14,8 @@ There will be a Main function that will loop through every week of a season and 
 
     Current Issues that still need to be addressed:
     -How are we accounting for running multiple seasons or multiple initial lineups that all populate the same Q-table?
-    -
+    -Action exploration strategy 
+    -What are we outputting (ideally, a csv file with a bunch of data so we can make plots easily?)
 
 =#
     function IntegratedFnc(YearFileLocation)
@@ -36,10 +37,12 @@ There will be a Main function that will loop through every week of a season and 
         #Initialize the Players that will be used for the season
         QB_Players, RB_Players, WR_Players = PlayerTags(YearFileLocation)
 
+        #Initialize output textfile
+
         #Number of weeks in a specified season, used to determine number of iterations 
         NumWeeks = size(readdir(YearFileLocation),1)
 
-        #run through every weekly game in a season at a time
+        #Run through every weekly game in a season at a time
         for i in 1:NumWeeks 
 
             #STATE________________________________________________________________________________________
@@ -50,7 +53,7 @@ There will be a Main function that will loop through every week of a season and 
                 lineup = makeRandomLineup(QB_Players, RB_Players, WB_Players)
                 currentWeekData = Rollout(YearFileLocation, 1, QB_Players, RB_Players, WR_Players)
                 rank = getPlayerRankings(lineup, currentWeekData)
-                state = makeState(rank)
+                State = makeState(rank)
 
                 #Keep track of which Player Integers correspond to the rankings in State
                 StatePlayerTags = RankingToPlayers(State) 
@@ -75,23 +78,25 @@ There will be a Main function that will loop through every week of a season and 
 
             #ROLLOUT________________________________________________________________________________________
             #Rollout Function Input/Output 
-                #Input: Year, Week, Array of Player Integer Tag (see PlayerTags function)
-                #Output: Table with Player Integer, Rank for the week, Position, and Fantasy Points 
-                #Daniel's function "getPlayerRankings" does this already but need to make sure that the input to that function is a dataset with only the 24 players we are dealing with or else 
-
+            #Input: Year, Week, Array of Player Integer Tag (see PlayerTags function)
+            #Output: Table with Player Integer, Rank for the week, Position, and Fantasy Points 
+            #Daniel's function "getPlayerRankings" does this already but need to make sure that the input to that function is a dataset with only the 24 players we are dealing with or else 
+            RolloutTable = Rollout(YearFileLocation, i, QB_Players, RB_Players, WR_Players)
 
             #NEXT STATE_______________________________________________________________________________________
-                #Recalculate the state based on new rankings, Daniel's functions already do this:
-                    #getPlayerRankings (input: NextStatePlayerTags)
+            #Recalculate the state based on new rankings, Daniel's functions already do this:   
+            nextStateRankings = getPlayerRankings(Transition_State, RolloutTable)
+            NextState = makeState(newStateRankings)
 
-                    NextState = makeState  
 
             #REWARD____________________________________________________________________________________________
-                #CumulativeReward will be an array with the reward for every week's lineup. We'll keep track of this to show our agent improving over time. 
+            #CumulativeReward will be an array with the reward for every week's lineup. We'll keep track of this to show our agent improving over time. 
 
             #Q-LEARNING___________________________________________________________________________________________
             #Update Q Table
             QLearning(Q,State,Action,Reward,NextState)
+
+            #Write out data to textfile
 
             #Update State for next iteration
             State = NextState
@@ -160,14 +165,23 @@ There will be a Main function that will loop through every week of a season and 
         #Step 3: We only care about the subset of players in QB_Players, RB_Players and WR_Players 
         #merge player dictionaries into 1 dictionary with all players and tags
         Players = merge(QB_Players,RB_Players,WR_Players)
-        
 
+        #initialize data DataFrame
+        RolloutTable = DataFrame(player = String(::String), ID = Int[], position = String(::String), points = Float64[])
 
+        #this is so inefficient but creating final dataframe with just the subset of players we are using and adding the player tag
+        for i in 1:length(Players)
+            row = findall(limitedData.player .== Players[i])
+            dataArray = [limitedData.player[row], i, limitedData.position[row], limitedData.points[row]]
+            push!(RolloutTable, dataArray)
+
+        end
+        PlayerArray, IDArray, PositionArray, PointsArray 
+        #RolloutTable
     end
 
-
     function TransitionState(State, Action)
-        #implements actions to update the state tuple before we run the rollout
+        #implements actions to update the state tuple before we run the rollout, needs to output a lineup
         return TransitionState 
     end
 
