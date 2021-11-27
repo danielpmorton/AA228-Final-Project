@@ -6,16 +6,19 @@ There will be a Main function that will loop through every week of a season and 
 
     Current Subfunctions that Zahra needs to fill out:
     -PlayerTags - DONE
-    -RankingstoPlayers 
+    -RankingstoPlayers - DONE
     -Rollout - DONE
-    -TransitionState
+    -Transition - DONE
     -CalculateReward 
     -QLearning - DONE
 
     Current Issues that still need to be addressed:
     -How are we accounting for running multiple seasons or multiple initial lineups that all populate the same Q-table?
     -Action exploration strategy 
+        -Add checks for which actions are possible: make sure that we check that you don't "switch QB up" if you already have the 1 ranked QB
     -What are we outputting (ideally, a csv file with a bunch of data so we can make plots easily?)
+    -Figure out how to handle data for the first iteration (when defining State and Transition State, do we use the week 1 data?)
+    -DEBUGGING: makeState function giving errors (does it have something to do with indexing?)
 
 =#
 
@@ -28,11 +31,12 @@ There will be a Main function that will loop through every week of a season and 
             #CumulativeReward: Array of Reward for every week so that we can plot it 
             #Q : Matrix of Action Value for each state, action pair 
 
-
+        ####### INITIALIZE STUFF #################
         #Initialize State and Q-Table to empty. NOTE: This will need to change once I figure out how to handle Q from season to season
         State = []
         StateSpace = 1000
         ActionSpace = 7
+        CumulativeReward = []
         Q = zeros(StateSpace, ActionSpace)
 
         #Initialize the Players that will be used for the season
@@ -43,63 +47,63 @@ There will be a Main function that will loop through every week of a season and 
         #Number of weeks in a specified season, used to determine number of iterations 
         NumWeeks = size(readdir(YearFileLocation),1)
 
+        ####### BEGIN MEGA FOR_LOOP ##################
         #Run through every weekly game in a season at a time
         for i in 1:NumWeeks 
-            #STATE________________________________________________________________________________________
+
+            ####### STATE ##################
             #Define State (use Daniel's stateJustRank functions)
             #Either a random lineup or from previous week (if using from previous week, state will be defined after Q-table is updated)
             if isempty(State)
                 #generate random lineup using week 1 data
-                lineup = makeRandomLineup(QB_Players, RB_Players, WR_Players)
+                CurrentStateLineup = makeRandomLineup(QB_Players, RB_Players, WR_Players)
                 currentWeekData = Rollout(YearFileLocation, 1, QB_Players, RB_Players, WR_Players)
-                rank = getPlayerRankings(lineup, currentWeekData)
-                State = makeState(rank)
-
-                #Keep track of which Player Integers correspond to the rankings in State
-                StatePlayerTags = RankingToPlayers(State) 
+                Rank = getPlayerRankings(CurrentStateLineup, currentWeekData)
+                State = makeState(Rank)
+    
             end 
                 
-            
-            #ACTION_________________________________________________________________________________________
+            ####### ACTION ##################
             #NEEDS WORK: Define Action (need to implement exploration strategy) 
-            if i < 5
-                Action = rand(1:7)
-            else
-                #greedy action
-                Action = argmax(Q)
-            end
+            Action = rand(1:7)
 
-
-            #TRANSITION STATE_______________________________________________________________________________
+            ######## TRANSITION STATE #################
             #Transition State: accounts for the change in the roster based on the action but is based on current rankings. 
-            Transition_State = TransitionState(State,Action)
+            #If we are on the first iteration (i.e. no rollouts have happened, just use the first week's data) Otherwise, use the data of the previous iteration)
+            if i == 1
+                preRolloutInt = 1
+            else
+                preRolloutInt = i - 1
+            end
+            TransitionRank = Transition(Rank,Action)
+            prevWeekData = Rollout(YearFileLocation, preRolloutInt, QB_Players, RB_Players, WR_Players)
             #Keep track of which Player Integers correspond to the rankings in State
-            NextStatePlayerTags = RankingToPlayers(Transition_State)
+            NextStateLineup = RankingToPlayers(TransitionRank,prevWeekData)
 
-            #ROLLOUT________________________________________________________________________________________
+            ######## ROLLOUT ################
             #Rollout Function Input/Output 
-            #Input: Year, Week, Array of Player Integer Tag (see PlayerTags function)
-            #Output: Table with Player Integer, Rank for the week, Position, and Fantasy Points 
+            #Input: Year, Week, Arrays of Players (see PlayerTags function)
+            #Output: Table with Player Name, Player ID, Position, and Fantasy Points 
             #Daniel's function "getPlayerRankings" does this already but need to make sure that the input to that function is a dataset with only the 24 players we are dealing with or else 
             RolloutTable = Rollout(YearFileLocation, i, QB_Players, RB_Players, WR_Players)
 
-            #NEXT STATE_______________________________________________________________________________________
+            ######### NEXT STATE ################
             #Recalculate the state based on new rankings, Daniel's functions already do this:   
-            nextStateRankings = getPlayerRankings(Transition_State, RolloutTable)
-            NextState = makeState(newStateRankings)
+            NextStateRanking = getPlayerRankings(NextStateLineup, RolloutTable)
+            NextState = makeState(NextStateRanking)
 
-
-            #REWARD____________________________________________________________________________________________
+            ########## REWARD ##############
             #CumulativeReward will be an array with the reward for every week's lineup. We'll keep track of this to show our agent improving over time. 
 
-            #Q-LEARNING___________________________________________________________________________________________
+            ########## Q-LEARNING ###############
             #Update Q Table
             QLearning(Q,State,Action,Reward,NextState)
 
             #Write out data to textfile
 
-            #Update State for next iteration
+            #Update State and Rank for next iteration
             State = NextState
+            Rank = nextStateRanking
  
         end
         return Q, CumulativeReward
@@ -148,9 +152,27 @@ There will be a Main function that will loop through every week of a season and 
     end
 
 
-    function RankingstoPlayers(State, weeklydata)
-        #the reverse function of Daniel's "getPlayerRankings", this function will map the rankings in our state back to the player tags generated by PlayerTags)
-        return PlayerState
+    function RankingstoPlayers(LineupRank, weeklydata)
+        #the reverse function of Daniel's "getPlayerRankings", this function will map the rankings in our state back to player names)
+        #Input: Rankings of your lineup, weeklydata in the form generated by the RolloutFunction
+        #Output: A dictionary with postion mapped to player name 
+
+        # Separate the data by position
+        QBdata = weeklydata[weeklydata.position .== "QB", :]
+        RBdata = weeklydata[weeklydata.position .== "RB", :]
+        WRdata = weeklydata[weeklydata.position .== "WR", :]
+
+        # Sort the data by points from highest to lowest, so the first player has the highest score
+        sort!(QBdata, [:points], rev=true) 
+        sort!(RBdata, [:points], rev=true) 
+        sort!(WRdata, [:points], rev=true) 
+
+        QBName = weeklydata.player[LineupRank["QB"]]
+        RBName = weeklydata.player[LineupRank["RB"]]
+        WRName = weeklydata.player[LineupRank["WR"]]
+
+        Lineup = Dict("QB" => QBName, "RB" => RBName, "WR" => WRName)
+        
     end 
 
     function Rollout(YearFileLocation, weekNum, QB_Players, RB_Players, WR_Players)
@@ -180,12 +202,90 @@ There will be a Main function that will loop through every week of a season and 
         RolloutTable
     end
 
-    function TransitionState(State, Action)
-        #implements actions to update the state tuple before we run the rollout, needs to output a lineup
-        return TransitionState 
+    function Transition(Rank, Action)
+        #implements actions to update the state tuple before we run the rollout, outputs ranks 
+
+        transitionRank = Rank
+
+        if Action == 1 # swap QB up
+                new = transitionRank["QB"] - 1
+                delete!(transitionRank, "QB")
+                transitionRank["QB"] = new 
+
+        elseif Action == 2 # swap QB down
+                new = transitionRank["QB"] + 1
+                delete!(transitionRank, "QB")
+                transitionRank["QB"] = new 
+
+        elseif Action == 3 # swap RB up
+                new = transitionRank["RB"] - 1
+                delete!(transitionRank, "RB")
+                transitionRank["RB"] = new 
+
+        elseif Action == 4 # swap RB down
+                new = transitionRank["RB"] + 1
+                delete!(transitionRank, "RB")
+                transitionRank["RB"] = new
+
+        elseif Action == 5 # swap WR up
+                new = transitionRank["WR"] - 1
+                delete!(transitionRank, "WR")
+                transitionRank["WR"] = new
+
+        elseif Action == 6 # swap WR down
+                new = transitionRank["WR"] + 1
+                delete!(transitionRank, "WR")
+                transitionRank["WR"] = new
+
+        end
+
+        transitionRank
+        
     end
 
-    function CalculateReward(NextState, Action)
+    function CalculateReward(NextStateLineup, NextStateRanking, Action)
+        #The reward for each iteration will be composed of a transaction cost for trading a player plus the fantasy points scored by the lineup
+
+        #Hyperparameters: We can vary how much the transaction cost of trading a specific position should be scaled by
+        #General_Scalar is so that transaction cost is same order of magnitude as fantasy points
+        #Total Transaction Cost = (Position_Transaction)* (General_Scalar) * (Inverse of New Rank)
+        QB_Transaction = 1.5
+        RB_Transaction = 1.5
+        WR_Transaction = 1
+        General_Scalar = 10
+
+        if Action == 1 # swap QB up
+            Transaction_Cost = -1 * Int(NextStateRanking["QB"])
+            Scaled_Cost = QB_Transaction * Transaction_Cost  
+
+        elseif Action == 2 # swap QB down
+                new = transitionRank["QB"] + 1
+                delete!(transitionRank, "QB")
+                transitionRank["QB"] = new 
+
+        elseif Action == 3 # swap RB up
+                new = transitionRank["RB"] - 1
+                delete!(transitionRank, "RB")
+                transitionRank["RB"] = new 
+
+        elseif Action == 4 # swap RB down
+                new = transitionRank["RB"] + 1
+                delete!(transitionRank, "RB")
+                transitionRank["RB"] = new
+
+        elseif Action == 5 # swap WR up
+                new = transitionRank["WR"] - 1
+                delete!(transitionRank, "WR")
+                transitionRank["WR"] = new
+
+        elseif Action == 6 # swap WR down
+                
+
+        elseif Action == 7 #do nothing
+                Transaction_Cost = 0
+
+        end
+
         
     end
 
