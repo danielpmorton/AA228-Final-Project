@@ -19,7 +19,13 @@ There will be a Main function that will loop through every week of a season and 
     -What are we outputting (ideally, a csv file with a bunch of data so we can make plots easily?)
     -Figure out how to handle data for the first iteration (when defining State and Transition State, do we use the week 1 data?)
     -Confirm Reward model (we can always try what I currently have and adjust if the results are dumb)
+    -DEBUGGING: issue with rollout function (need to go through and make sure indexing is working as intended) 
     -DEBUGGING: makeState function giving errors (does it have something to do with indexing?)
+
+    Update 11/26
+    -See Issues above
+    -There's a bug in the rollout function (has to do with how I'm handling the dataframes) that is messing up the reward function, I'll take a look tomorrow
+    -Need to add/format text file output 
 
 =#
 
