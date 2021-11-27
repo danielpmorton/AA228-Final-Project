@@ -1,4 +1,4 @@
-```
+#=
 UPDATE **************
 - reducing the number of players per position to 8
 - reducing the definition of mean and variance to just "above" vs "below" average
@@ -20,7 +20,7 @@ state -- a number which encodes the ranking of the QB, RB, WR
 Some notes:
 - As of 11/24: needs to be integrated better with Walter's code!
   -- note the structure of the data passed into getPlayerRankings() !!
-```
+=#
 
 using DataFrames
 using CSV # Check if actually using this ones
@@ -46,7 +46,7 @@ end
 ##### Begin sub functions #####
 
 function namesToLineup(QB_name, RB_name, WR_name)
-    ``` Converts three player names (strings) into a dictionary mapping positions => names ```
+    # Converts three player names (strings) into a dictionary mapping positions => names 
     lineup = Dict([("QB", QB_name), ("RB", RB_name), ("WR", WR_name)])
     return lineup
 end
@@ -55,11 +55,11 @@ end
 # Assumes we have a table like the others but with only one column of week data called "points" ****
 # player, position, points
 function getPlayerRankings(lineup, currentWeekData)
-    ```
+    #=
     Description: Takes the most recent weekly data, ranks the players, and assigns a rank to the players in your lineup
     Inputs:
     Outputs: Dictionary mapping the positions => rank for the chosen player
-    ```
+    =#
     # Separate the data by position
     QBdata = currentWeekData[currentWeekData.position .== "QB", :]
     RBdata = currentWeekData[currentWeekData.position .== "RB", :]
