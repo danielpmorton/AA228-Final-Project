@@ -6,8 +6,8 @@ There will be a Main function that will loop through every week of a season and 
 
     Current Subfunctions that Zahra needs to fill out:
     -PlayerTags - DONE
-    -RankingstoPlayers
-    -Rollout
+    -RankingstoPlayers 
+    -Rollout - DONE
     -TransitionState
     -CalculateReward 
     -QLearning - DONE
@@ -18,6 +18,7 @@ There will be a Main function that will loop through every week of a season and 
     -What are we outputting (ideally, a csv file with a bunch of data so we can make plots easily?)
 
 =#
+
     function IntegratedFnc(YearFileLocation)
         #This function will define all of the inputs for Q-Learning (state, action, reward, and next state). In order to define the reward and next state, we need to conduct a rollout.
         #Inputs
@@ -44,13 +45,12 @@ There will be a Main function that will loop through every week of a season and 
 
         #Run through every weekly game in a season at a time
         for i in 1:NumWeeks 
-
             #STATE________________________________________________________________________________________
             #Define State (use Daniel's stateJustRank functions)
             #Either a random lineup or from previous week (if using from previous week, state will be defined after Q-table is updated)
             if isempty(State)
                 #generate random lineup using week 1 data
-                lineup = makeRandomLineup(QB_Players, RB_Players, WB_Players)
+                lineup = makeRandomLineup(QB_Players, RB_Players, WR_Players)
                 currentWeekData = Rollout(YearFileLocation, 1, QB_Players, RB_Players, WR_Players)
                 rank = getPlayerRankings(lineup, currentWeekData)
                 State = makeState(rank)
@@ -141,8 +141,8 @@ There will be a Main function that will loop through every week of a season and 
 
         #Create Dictionaries for each position with an integer key and player name value
         QB_Players = Dict(i => QBsubset[i] for i=1:size(QBsubset,1))
-        RB_Players = Dict(i + 8 => RBsubset[i] for i=1:size(RBsubset,1))
-        WR_Players = Dict(i + 16 => WRsubset[i] for i=1:size(WRsubset,1))
+        RB_Players = Dict(i => RBsubset[i] for i=1:size(RBsubset,1))
+        WR_Players = Dict(i => WRsubset[i] for i=1:size(WRsubset,1))
 
         QB_Players, RB_Players, WR_Players
     end
@@ -164,20 +164,20 @@ There will be a Main function that will loop through every week of a season and 
 
         #Step 3: We only care about the subset of players in QB_Players, RB_Players and WR_Players 
         #merge player dictionaries into 1 dictionary with all players and tags
-        Players = merge(QB_Players,RB_Players,WR_Players)
+        Players = [QB_Players,RB_Players,WR_Players]
 
         #initialize data DataFrame
-        RolloutTable = DataFrame(player = String(::String), ID = Int[], position = String(::String), points = Float64[])
+        RolloutTable = DataFrame(player = Any[], ID = Any[], position = Any[], points = Any[])
 
         #this is so inefficient but creating final dataframe with just the subset of players we are using and adding the player tag
-        for i in 1:length(Players)
-            row = findall(limitedData.player .== Players[i])
-            dataArray = [limitedData.player[row], i, limitedData.position[row], limitedData.points[row]]
-            push!(RolloutTable, dataArray)
-
+        for j in 1:length(Players)
+            for i in 1:length(Players[j])
+                row = findfirst(limitedData.player .== Players[j][i])
+                dataArray = [limitedData.player[row], i, limitedData.position[row], limitedData.points[row]]
+                push!(RolloutTable, dataArray)
+            end
         end
-        PlayerArray, IDArray, PositionArray, PointsArray 
-        #RolloutTable
+        RolloutTable
     end
 
     function TransitionState(State, Action)
