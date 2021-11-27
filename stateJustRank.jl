@@ -78,11 +78,11 @@ function getPlayerRankings(lineup, currentWeekData)
 end
 
 function makeRandomLineup(QBs, RBs, WRs)
-    ```
+    #=
     Description: Creates a random lineup for the week
     Inputs: Arrays storing the names of all QBs, RBs, and WRs being considered in the league
     Outputs: A dictionary storing the position and the associated name of the player -- Example: "QB" => "Tom Brady"
-    ```
+    =#
     QB_name = QBs[rand((1:length(QBs)))]
     RB_name = RBs[rand((1:length(RBs)))]
     WR_name = WRs[rand((1:length(WRs)))]
@@ -91,12 +91,12 @@ function makeRandomLineup(QBs, RBs, WRs)
 end
 
 function makeState(ranks)
-    ```
+    #=
     Description: Get an integer value based on the rank and the comparison 
     Inputs: ranks: Dictionary mapping "position" => rank in the league
     Outputs: state -- a number which encodes the ranking of the QB, RB, WR 
                    -> uses binary encoding and then converts to integer with with range (0,511)
-    ```
+    =#
     # Combine our info together into a 15-bit binary string
     # First, convert the ranks for each player into a binary number
     QBrank_binary = digits((ranks["QB"]-1), base=2, pad=3) |> reverse
@@ -111,4 +111,4 @@ function makeState(ranks)
 end
 
 ##### RUN THE MAIN FUNCTION #####
-main() 
+#main() 
