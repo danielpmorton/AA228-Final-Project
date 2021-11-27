@@ -9,7 +9,7 @@ There will be a Main function that will loop through every week of a season and 
     -RankingstoPlayers - DONE
     -Rollout - DONE
     -Transition - DONE
-    -CalculateReward 
+    -CalculateReward -DONE
     -QLearning - DONE
 
     Current Issues that still need to be addressed:
@@ -20,12 +20,22 @@ There will be a Main function that will loop through every week of a season and 
     -Figure out how to handle data for the first iteration (when defining State and Transition State, do we use the week 1 data?)
     -Confirm Reward model (we can always try what I currently have and adjust if the results are dumb)
     -DEBUGGING: issue with rollout function (need to go through and make sure indexing is working as intended) 
+        -Need to unify CSV files 
     -DEBUGGING: makeState function giving errors (does it have something to do with indexing?)
 
     Update 11/26
     -See Issues above
     -There's a bug in the rollout function (has to do with how I'm handling the dataframes) that is messing up the reward function, I'll take a look tomorrow
     -Need to add/format text file output 
+
+    Variables:
+        -In dealing with the State we have a few variables:
+            -Lineup - dictionary that maps position to player name
+            -Rank - dictionary that maps position to ranking of player for the week
+            -State - the actual state variable used in Q-learning (encodes the rank tuple)
+        -Data Management
+            - QB, RB, WR - sets of 8 players for each position that are used to define our state StateSpace
+            -
 
 =#
 
@@ -43,8 +53,8 @@ There will be a Main function that will loop through every week of a season and 
         State = []
         StateSpace = 1000
         ActionSpace = 7
-        CumulativeReward = []
         Q = zeros(StateSpace, ActionSpace)
+        CumulativeReward = []
 
         #Initialize the Players that will be used for the season
         QB_Players, RB_Players, WR_Players = PlayerTags(YearFileLocation)
@@ -54,7 +64,7 @@ There will be a Main function that will loop through every week of a season and 
         #Number of weeks in a specified season, used to determine number of iterations 
         NumWeeks = size(readdir(YearFileLocation),1)
 
-        ####### BEGIN MEGA FOR_LOOP ##################
+        ####### BEGIN MEGA FOR LOOP ##################
         #Run through every weekly game in a season at a time
         for i in 1:NumWeeks 
 
@@ -67,7 +77,6 @@ There will be a Main function that will loop through every week of a season and 
                 currentWeekData = Rollout(YearFileLocation, 1, QB_Players, RB_Players, WR_Players)
                 Rank = getPlayerRankings(CurrentStateLineup, currentWeekData)
                 State = makeState(Rank)
-    
             end 
                 
             ####### ACTION ##################
@@ -101,6 +110,8 @@ There will be a Main function that will loop through every week of a season and 
 
             ########## REWARD ##############
             #CumulativeReward will be an array with the reward for every week's lineup. We'll keep track of this to show our agent improving over time. 
+            Reward = CalculateReward(NextStateLineup, NextStateRanking, Action, RolloutTable)
+            push!(CumulativeReward, Reward)
 
             ########## Q-LEARNING ###############
             #Update Q Table
@@ -110,7 +121,7 @@ There will be a Main function that will loop through every week of a season and 
 
             #Update State and Rank for next iteration
             State = NextState
-            Rank = nextStateRanking
+            Rank = NextStateRanking
  
         end
         return Q, CumulativeReward
