@@ -18,6 +18,7 @@ There will be a Main function that will loop through every week of a season and 
         -Add checks for which actions are possible: make sure that we check that you don't "switch QB up" if you already have the 1 ranked QB
     -What are we outputting (ideally, a csv file with a bunch of data so we can make plots easily?)
     -Figure out how to handle data for the first iteration (when defining State and Transition State, do we use the week 1 data?)
+    -Confirm Reward model (we can always try what I currently have and adjust if the results are dumb)
     -DEBUGGING: makeState function giving errors (does it have something to do with indexing?)
 
 =#
@@ -243,50 +244,56 @@ There will be a Main function that will loop through every week of a season and 
         
     end
 
-    function CalculateReward(NextStateLineup, NextStateRanking, Action)
+    function CalculateReward(NextStateLineup, NextStateRanking, Action, RolloutTable)
         #The reward for each iteration will be composed of a transaction cost for trading a player plus the fantasy points scored by the lineup
 
         #Hyperparameters: We can vary how much the transaction cost of trading a specific position should be scaled by
         #General_Scalar is so that transaction cost is same order of magnitude as fantasy points
         #Total Transaction Cost = (Position_Transaction)* (General_Scalar) * (Inverse of New Rank)
+        #Currently, trading down gives you a positive reward, not sure if we want to change this
         QB_Transaction = 1.5
         RB_Transaction = 1.5
         WR_Transaction = 1
-        General_Scalar = 10
+        General_Scalar = 5
 
         if Action == 1 # swap QB up
             Transaction_Cost = -1 * Int(NextStateRanking["QB"])
-            Scaled_Cost = QB_Transaction * Transaction_Cost  
+            Scaled_Cost = General_Scalar * QB_Transaction * Transaction_Cost  
 
         elseif Action == 2 # swap QB down
-                new = transitionRank["QB"] + 1
-                delete!(transitionRank, "QB")
-                transitionRank["QB"] = new 
+            Transaction_Cost = Int(NextStateRanking["QB"])
+            Scaled_Cost = General_Scalar * QB_Transaction * Transaction_Cost 
 
         elseif Action == 3 # swap RB up
-                new = transitionRank["RB"] - 1
-                delete!(transitionRank, "RB")
-                transitionRank["RB"] = new 
+                Transaction_Cost = -1* Int(NextStateRanking["RB"])
+                Scaled_Cost = General_Scalar * RB_Transaction * Transaction_Cost 
 
         elseif Action == 4 # swap RB down
-                new = transitionRank["RB"] + 1
-                delete!(transitionRank, "RB")
-                transitionRank["RB"] = new
+                Transaction_Cost = Int(NextStateRanking["RB"])
+                Scaled_Cost = General_Scalar * RB_Transaction * Transaction_Cost 
 
         elseif Action == 5 # swap WR up
-                new = transitionRank["WR"] - 1
-                delete!(transitionRank, "WR")
-                transitionRank["WR"] = new
+                Transaction_Cost = -1* Int(NextStateRanking["WR"])
+                Scaled_Cost = General_Scalar * WR_Transaction * Transaction_Cost 
 
         elseif Action == 6 # swap WR down
-                
+                Transaction_Cost = Int(NextStateRanking["WR"])
+                Scaled_Cost = General_Scalar * WR_Transaction * Transaction_Cost 
 
         elseif Action == 7 #do nothing
                 Transaction_Cost = 0
 
         end
 
-        
+        #Fantasy Points for each player
+        QBrow = findfirst(RolloutTable.player .== NextStateLineup["QB"])
+        RBrow = findfirst(RolloutTable.player .== NextStateLineup["RB"])
+        WRrow = findfirst(RolloutTable.player .== NextStateLineup["WR"])
+
+        TotalFantasyPoints = RolloutTable.points[QBrow] + RolloutTable.points[RBrow] + RolloutTable.points[WRrow]
+
+        TotalReward = Transaction_Cost + TotalFantasyPoints
+
     end
 
     function QLearning(Q,state,action,reward,next_state)
