@@ -53,6 +53,9 @@ There will be a Main function that will loop through every week of a season and 
         State = []
         StateSpace = 1000
         ActionSpace = 7
+        #initialize exploration parameter and decay factor
+        epsilon = 0.9
+        alpha = 0.9
         Q = zeros(StateSpace, ActionSpace)
         CumulativeReward = []
 
@@ -60,6 +63,7 @@ There will be a Main function that will loop through every week of a season and 
         QB_Players, RB_Players, WR_Players = PlayerTags(YearFileLocation)
 
         #Initialize output textfile
+
 
         #Number of weeks in a specified season, used to determine number of iterations 
         NumWeeks = size(readdir(YearFileLocation),1)
@@ -80,8 +84,14 @@ There will be a Main function that will loop through every week of a season and 
             end 
                 
             ####### ACTION ##################
-            #NEEDS WORK: Define Action (need to implement exploration strategy) 
-            Action = rand(1:7)
+            #NEEDS WORK: Exploration parameters defined at beginning of function, need to add checks 
+            if rand() < epsilon 
+                epsilon *= alpha 
+                Action = rand(1:7)
+            else
+                Action = argmax(Q[State,:])
+            end
+            
 
             ######## TRANSITION STATE #################
             #Transition State: accounts for the change in the roster based on the action but is based on current rankings. 
