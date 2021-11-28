@@ -147,7 +147,7 @@ using Printf
 
         open(PolicyFileName, "a") do io
             for i in 1:size(policy,1)
-                @printf(io, "%s,%s\n", i, policy[i])
+                println(io, "\n", i,",", policy[i])
             end
         end
 
