@@ -104,11 +104,26 @@ function makeState(ranks)
     WRrank_binary = digits((ranks["WR"]-1), base=2, pad=3) |> reverse
     # Now, combine these all together in a string
     # Note: the performance stats are 0 or 1 now and don't need to be converted to binary
-    bitstring = string(QBrank_binary) * string(RBrank_binary) * string(WRrank_binary)
+    #bitstring = string(QBrank_binary) * string(RBrank_binary) * string(WRrank_binary)
     # Un-binarify this value
-    state = parse(Int, bitstring, base=2)
+    #state = parse(Int, bitstring, base=2) + 1
+
+    # NEW NEW NEW
+    QBstring = string(QBrank_binary[1])
+    RBstring = string(RBrank_binary[1])
+    WRstring = string(WRrank_binary[1])
+    for i = 2:3
+        QBstring = QBstring * string(QBrank_binary[i])
+        RBstring = RBstring * string(RBrank_binary[i])
+        WRstring = WRstring * string(WRrank_binary[i])
+    end
+    bitstring = QBstring * RBstring * WRstring
+
+    state = parse(Int, bitstring, base=2) +1
+
     return state
 end
+
 
 ##### RUN THE MAIN FUNCTION #####
 #main() 
