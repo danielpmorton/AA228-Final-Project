@@ -28,8 +28,15 @@ There will be a Main function that will loop through every week of a season and 
 
 =#
 
+using DataFrames
+using CSV
+using Statistics
+using Random
+using Printf 
+
     function IntegratedFnc(YearFileLocation, OutputFileName)
         #This function will define all of the inputs for Q-Learning (state, action, reward, and next state). In order to define the reward and next state, we need to conduct a rollout.
+        #Example: IntegratedFnc("/Users/Documents/AA228/FinalProject/newweekly/2018", "TestRun")
         #Inputs
             # Year_FileLocation: Path of location of folder with csv files for a yearly season
             # OutputFileName: String of output file name. Needs to have quotations around it ("OutputFileName")
@@ -140,7 +147,7 @@ There will be a Main function that will loop through every week of a season and 
 
         open(PolicyFileName, "a") do io
             for i in 1:size(policy,1)
-                println(io, "%s,%s\n", i, policy[i])
+                @printf(io, "%s,%s\n", i, policy[i])
             end
         end
 
