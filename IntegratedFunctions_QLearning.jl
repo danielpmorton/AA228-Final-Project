@@ -94,6 +94,8 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
         # alpha = 0.9
 
         State = []
+        CurrentStateLineup = Dict[]
+        
         # Season for-loop
         #Run through every weekly game in a season at a time. Start at week 2 because week 1 is reserved for initializing the first state.
         for i in 2:NumWeeks 
@@ -141,7 +143,7 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
 
             ########## STEP 7: CALCULATE REWARD ##############
             #CumulativeReward will be an array with the reward for every week's lineup. We'll keep track of this to show our agent improving over time. 
-            Reward = CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable)
+            Reward = CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable, CurrentStateLineup)
             push!(CumulativeReward, Reward)
 
             ########## STEP 8: Q-LEARNING ###############
@@ -158,6 +160,7 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
 
             #Update State and Rank for next iteration
             State = copy(NextState)
+            CurrentStateLineup = copy(NextStateLineup)
             Rank = copy(NextStateRank)
 
         end
@@ -374,7 +377,7 @@ function Transition(Rank, Action)
     
 end
 
-function CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable)
+function CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable, CurrentStateLineup)
     #The reward for each iteration will be composed of a transaction cost for trading a player plus the fantasy points scored by the lineup
 
     #Hyperparameters: We can vary how much the transaction cost of trading a specific position should be scaled by
@@ -420,9 +423,14 @@ function CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable)
     RBrow = findfirst(RolloutTable.player .== NextStateLineup["RB"])
     WRrow = findfirst(RolloutTable.player .== NextStateLineup["WR"])
 
-    TotalFantasyPoints = RolloutTable.points[QBrow] + RolloutTable.points[RBrow] + RolloutTable.points[WRrow]
+    QBrow_old =findfirst(RolloutTable.player .== CurrentStateLineup["QB"])
+    RBrow_old = findfirst(RolloutTable.player .== CurrentStateLineup["RB"])
+    WRrow_old = findfirst(RolloutTable.player .== CurrentStateLineup["WR"])
 
-    TotalReward = Transaction_Cost + TotalFantasyPoints
+    NewTotalFantasyPoints = RolloutTable.points[QBrow] + RolloutTable.points[RBrow] + RolloutTable.points[WRrow]
+    OldTotalFantasyPoints = RolloutTable.points[QBrow_old] + RolloutTable.points[RBrow_old] + RolloutTable.points[WRrow_old]
+
+    TotalReward = Transaction_Cost + NewTotalFantasyPoints - OldTotalFantasyPoints
 
 end
 

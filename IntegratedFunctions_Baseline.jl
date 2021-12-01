@@ -36,7 +36,7 @@ using Printf
 
 include("stateJustRank.jl") 
 
-function main_random()
+function main()
     YearFileLocation = "newweekly/2017"
     OutputFileName = "TestRun"
     IntegratedFnc(YearFileLocation, OutputFileName)
@@ -54,18 +54,16 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
 
     ####### STEP 1: INITIALIZE STUFF #################
     #Initialize State and Q-Table to empty. NOTE: This will need to change once I figure out how to handle Q from season to season
-    State = []
+    # State = []
     StateSpace = 512 # If rank-based state with 8 players/position, will have a 8^3 possible states
     ActionSpace = 7
-    #initialize exploration parameter and decay factor for selecting Action
-    epsilon = 0.9
-    alpha = 0.9
+
     Q = zeros(StateSpace, ActionSpace)
     CumulativeReward = []
     Rank = Dict{String, Int64}() # Initializing as empty dictionary with defined key => value types
     Qdata = DataFrame(State = Any[], Rank = Any[], Action = Any[], NextState = Any[], NextStateRankArray = Any[], Reward = Any[]) # Initialize a structure to store some data
     policyData = DataFrame()
-    numIterations = 1000
+    numIterations = 300
 
     #Initialize output textfiles
     DataFileName = OutputFileName * "_" * "Data" * ".csv"
@@ -74,13 +72,30 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
     #Number of weeks in a specified season, used to determine number of iterations 
     NumWeeks = size(readdir(YearFileLocation),1)
 
+    #initialize exploration parameter and decay factor for selecting Action
+    epsilon = 0.9
+    alpha = 0.9
+
+    rewardStorage = []
+    rewardStorageFileName = OutputFileName * "_" * "Rewards" * ".csv"
+    
     ####### BEGIN MEGA FOR LOOP ##################
     # Big for-loop: to populate the Q table with multiple runs through the season 
     for j in 1:numIterations
-        #println("Iteration: ", j)
+        if mod(j,10) == 0
+            println("Iteration: ", j)
+        end
         #Initialize the Players that will be used for the season. QB_Players, RB_Players, and WR_Players are dictionaries with 8 randomly chosen players for each position. 
         QB_Players, RB_Players, WR_Players = PlayerTags(YearFileLocation)
+        
+        CumulativeReward = []
 
+        # epsilon = 0.9
+        # alpha = 0.9
+
+        State = []
+        CurrentStateLineup = Dict[]
+        
         # Season for-loop
         #Run through every weekly game in a season at a time. Start at week 2 because week 1 is reserved for initializing the first state.
         for i in 2:NumWeeks 
@@ -97,9 +112,9 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
             end 
                 
             ####### STEP 3: CALCULATE ACTION ##################
-                Action = SelectAction(State,Rank,Q,epsilon)
-                #decay epsilon 
-                epsilon *= alpha 
+            Action = SelectAction(State,Rank,Q,epsilon)
+            #decay epsilon 
+            epsilon *= alpha 
             
             ######## STEP 4: CALCULATE TRANSITION STATE #################
             #Transition State: accounts for the change in the roster based on the action but is based on current rankings. 
@@ -128,7 +143,7 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
 
             ########## STEP 7: CALCULATE REWARD ##############
             #CumulativeReward will be an array with the reward for every week's lineup. We'll keep track of this to show our agent improving over time. 
-            Reward = CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable)
+            Reward = CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable, CurrentStateLineup)
             push!(CumulativeReward, Reward)
 
             ########## STEP 8: Q-LEARNING ###############
@@ -145,9 +160,12 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
 
             #Update State and Rank for next iteration
             State = copy(NextState)
+            CurrentStateLineup = copy(NextStateLineup)
             Rank = copy(NextStateRank)
 
         end
+        push!(rewardStorage, sum(CumulativeReward))
+
     end
 
     #extract policy from Q
@@ -159,7 +177,9 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
     CSV.write(DataFileName, Qdata)
     CSV.write(PolicyFileName, policyData)
 
-    return Q, CumulativeReward
+    CSV.write(rewardStorageFileName, DataFrame(reward = rewardStorage))
+
+    # return Q, CumulativeReward
 end
 
 ###### SUBFUNCTIONS ##################
@@ -226,9 +246,9 @@ function SelectAction(state, rank, Q, epsilon)
         i = 1
         
         while Action == 0
-            
+           
             Action = rand(1:7)
-            
+           
 
             #Check violations 
             if Action == 1 && rankArray[1] == 1
@@ -355,7 +375,7 @@ function Transition(Rank, Action)
     
 end
 
-function CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable)
+function CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable, CurrentStateLineup)
     #The reward for each iteration will be composed of a transaction cost for trading a player plus the fantasy points scored by the lineup
 
     #Hyperparameters: We can vary how much the transaction cost of trading a specific position should be scaled by
@@ -365,30 +385,30 @@ function CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable)
     QB_Transaction = 5
     RB_Transaction = 1.5
     WR_Transaction = 1
-    General_Scalar = 5
+    General_Scalar = 10
 
     if Action == 1 # swap QB up
-        Transaction_Cost = -1 * Int(NextStateRank["QB"])
+        Transaction_Cost = -1 * 1/Int(NextStateRank["QB"])
         Scaled_Cost = General_Scalar * QB_Transaction * Transaction_Cost  
 
     elseif Action == 2 # swap QB down
-        Transaction_Cost = Int(NextStateRank["QB"])
+        Transaction_Cost = 1/Int(NextStateRank["QB"])
         Scaled_Cost = General_Scalar * QB_Transaction * Transaction_Cost 
 
     elseif Action == 3 # swap RB up
-            Transaction_Cost = -1* Int(NextStateRank["RB"])
+            Transaction_Cost = -1* 1/Int(NextStateRank["RB"])
             Scaled_Cost = General_Scalar * RB_Transaction * Transaction_Cost 
 
     elseif Action == 4 # swap RB down
-            Transaction_Cost = Int(NextStateRank["RB"])
+            Transaction_Cost = 1/Int(NextStateRank["RB"])
             Scaled_Cost = General_Scalar * RB_Transaction * Transaction_Cost 
 
     elseif Action == 5 # swap WR up
-            Transaction_Cost = -1* Int(NextStateRank["WR"])
+            Transaction_Cost = -1* 1/Int(NextStateRank["WR"])
             Scaled_Cost = General_Scalar * WR_Transaction * Transaction_Cost 
 
     elseif Action == 6 # swap WR down
-            Transaction_Cost = Int(NextStateRank["WR"])
+            Transaction_Cost = 1/Int(NextStateRank["WR"])
             Scaled_Cost = General_Scalar * WR_Transaction * Transaction_Cost 
 
     elseif Action == 7 #do nothing
@@ -401,9 +421,14 @@ function CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable)
     RBrow = findfirst(RolloutTable.player .== NextStateLineup["RB"])
     WRrow = findfirst(RolloutTable.player .== NextStateLineup["WR"])
 
-    TotalFantasyPoints = RolloutTable.points[QBrow] + RolloutTable.points[RBrow] + RolloutTable.points[WRrow]
+    QBrow_old =findfirst(RolloutTable.player .== CurrentStateLineup["QB"])
+    RBrow_old = findfirst(RolloutTable.player .== CurrentStateLineup["RB"])
+    WRrow_old = findfirst(RolloutTable.player .== CurrentStateLineup["WR"])
 
-    TotalReward = Transaction_Cost + TotalFantasyPoints
+    NewTotalFantasyPoints = RolloutTable.points[QBrow] + RolloutTable.points[RBrow] + RolloutTable.points[WRrow]
+    OldTotalFantasyPoints = RolloutTable.points[QBrow_old] + RolloutTable.points[RBrow_old] + RolloutTable.points[WRrow_old]
+
+    TotalReward = Transaction_Cost + NewTotalFantasyPoints - OldTotalFantasyPoints
 
 end
 
@@ -416,5 +441,5 @@ end
 
 
 #################
-@time main_random()
+@time main()
 # main()
