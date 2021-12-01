@@ -28,7 +28,7 @@ function main_eval()
     ourPolicy = loadPolicy(policyFileName)
     randomPolicy = makeRandomPolicy(numStates, numActions)
 
-    # Initialize the first state
+   # Initialize the first state
     CurrentStateLineup = makeRandomLineup(QB_Players, RB_Players, WR_Players)
     currentWeekData = Rollout(YearFileLocation, 1, QB_Players, RB_Players, WR_Players)
     Rank = getPlayerRankings(CurrentStateLineup, currentWeekData)
@@ -36,7 +36,9 @@ function main_eval()
 
     # Evaluate our policy
     rewards_ourPolicy = evaluatePolicy(ourPolicy, State)
-    rewards_randomPolicy = evaluatePolicy(randomPolicy, State)
+    rewards_randomPolicy = evaluatePolicy(randomPolicy, State) 
+
+    
 
     # Goal: plot the cumulative reward over the course of the season for random and our action
     compareDF = DataFrame(ours = rewards_ourPolicy, random= rewards_randomPolicy)
@@ -51,6 +53,14 @@ function evaluatePolicy(policy, State)
     CumulativeReward = []
 
     for i in 2:NumWeeks 
+
+       
+        # Initialize the first state
+        CurrentStateLineup = makeRandomLineup(QB_Players, RB_Players, WR_Players)
+        currentWeekData = Rollout(YearFileLocation, 1, QB_Players, RB_Players, WR_Players)
+        Rank = getPlayerRankings(CurrentStateLineup, currentWeekData)
+        State = makeState(Rank) 
+
 
         Action = policy[State]
         preRolloutInt = i - 1

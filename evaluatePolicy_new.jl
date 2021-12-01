@@ -42,7 +42,26 @@ include("stateJustRank.jl")
 #     IntegratedFnc(YearFileLocation, OutputFileName)
 # end
 
-function IntegratedFnc(YearFileLocation, OutputFileName)
+function mainPolicyEval()
+    Qpolicy = loadPolicy("TestRun_Policy.csv")
+    RandomPolicy = makeRandomPolicy(512,7)
+    YearFileLocation = "/Users/Zahra1/Documents/Stanford/Classes/2021-2022/Fall_Quarter/AA228_Decision_Making_Under_Uncertainty/FinalProject/AA228-Final-Project/newweekly/2019"
+    QOutputFileName = "QtestEvalPolicy"
+    RandomOutFileName = "RandomEvalPolicy"
+
+    QB_Players, RB_Players, WR_Players = PlayerTags(YearFileLocation)
+    CurrentStateLineup = makeRandomLineup(QB_Players, RB_Players, WR_Players)
+    currentWeekData = Rollout(YearFileLocation, 1, QB_Players, RB_Players, WR_Players)
+    Rank = getPlayerRankings(CurrentStateLineup, currentWeekData)
+    initialState = makeState(Rank)
+
+    EvaluatePolicy(YearFileLocation, QOutputFileName, Qpolicy,Rank, initialState, CurrentStateLineup, currentWeekData, QB_Players, RB_Players,WR_Players)
+    EvaluatePolicy(YearFileLocation, RandomOutFileName, RandomPolicy, Rank, initialState, CurrentStateLineup, currentWeekData, QB_Players, RB_Players,WR_Players)
+end
+    
+
+
+function EvaluatePolicy(YearFileLocation, OutputFileName, policy, Rank, State, CurrentStateLineup, currentWeekData, QB_Players, RB_Players, WR_Players)
     #This function will define all of the inputs for Q-Learning (state, action, reward, and next state). In order to define the reward and next state, we need to conduct a rollout.
     #Example: IntegratedFnc("/Users/Documents/AA228/FinalProject/newweekly/2018", "TestRun")
     #Inputs
@@ -55,46 +74,37 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
     ####### STEP 1: INITIALIZE STUFF #################
     #Initialize State and Q-Table to empty. NOTE: This will need to change once I figure out how to handle Q from season to season
     # State = []
-    StateSpace = 512 # If rank-based state with 8 players/position, will have a 8^3 possible states
-    ActionSpace = 7
+    #StateSpace = 512 # If rank-based state with 8 players/position, will have a 8^3 possible states
+    #ActionSpace = 7
 
-    Q = zeros(StateSpace, ActionSpace)
     CumulativeReward = []
-    Rank = Dict{String, Int64}() # Initializing as empty dictionary with defined key => value types
-    Qdata = DataFrame(State = Any[], Rank = Any[], Action = Any[], NextState = Any[], NextStateRankArray = Any[], Reward = Any[]) # Initialize a structure to store some data
-    policyData = DataFrame()
-    numIterations = 1000
+    #Rank = Dict{String, Int64}() # Initializing as empty dictionary with defined key => value types
+    #Qdata = DataFrame(State = Any[], Rank = Any[], Action = Any[], NextState = Any[], NextStateRankArray = Any[], Reward = Any[]) # Initialize a structure to store some data
+    #policyData = DataFrame()
+    #numIterations = 1000
 
     #Initialize output textfiles
-    DataFileName = OutputFileName * "_" * "Data" * ".csv"
-    PolicyFileName = OutputFileName * "_" * "Policy" * ".csv"
+    #DataFileName = OutputFileName * "_" * "Data" * ".csv"
+    #PolicyFileName = OutputFileName * "_" * "Policy" * ".csv"
 
     #Number of weeks in a specified season, used to determine number of iterations 
     NumWeeks = size(readdir(YearFileLocation),1)
 
     #initialize exploration parameter and decay factor for selecting Action
-    epsilon = 0.9
-    alpha = 0.9
+    #epsilon = 0.9
+    #alpha = 0.9
 
     rewardStorage = []
     rewardStorageFileName = OutputFileName * "_" * "Rewards" * ".csv"
     
     ####### BEGIN MEGA FOR LOOP ##################
-    # Big for-loop: to populate the Q table with multiple runs through the season 
-    for j in 1:numIterations
-        if mod(j,10) == 0
-            println("Iteration: ", j)
-        end
-        #Initialize the Players that will be used for the season. QB_Players, RB_Players, and WR_Players are dictionaries with 8 randomly chosen players for each position. 
-        QB_Players, RB_Players, WR_Players = PlayerTags(YearFileLocation)
-        
-        CumulativeReward = []
+    #Initialize the Players that will be used for the season. QB_Players, RB_Players, and WR_Players are dictionaries with 8 randomly chosen players for each position. 
+    #QB_Players, RB_Players, WR_Players = PlayerTags(YearFileLocation)
+    
+    CumulativeReward = []
 
-        epsilon = 0.9
-        alpha = 0.9
-
-        State = []
-        CurrentStateLineup = Dict[]
+    #State = []
+    #CurrentStateLineup = Dict[]
         
         # Season for-loop
         #Run through every weekly game in a season at a time. Start at week 2 because week 1 is reserved for initializing the first state.
@@ -103,27 +113,23 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
             ####### STEP 2: CALCULATE STATE ##################
             #Define State (use Daniel's stateJustRank functions)
             #Either a random lineup or from previous week (if using from previous week, state will be defined after Q-table is updated at the end of this function)
-            if isempty(State)
+            #= if isempty(State)
                 #generate random lineup using week 1 data
                 CurrentStateLineup = makeRandomLineup(QB_Players, RB_Players, WR_Players)
                 currentWeekData = Rollout(YearFileLocation, 1, QB_Players, RB_Players, WR_Players)
                 Rank = getPlayerRankings(CurrentStateLineup, currentWeekData)
                 State = makeState(Rank)
-            end 
+            end  =#
                 
             ####### STEP 3: CALCULATE ACTION ##################
-            Action = SelectAction(State,Rank,Q,epsilon)
-            #decay epsilon 
-            epsilon *= alpha 
+            Action = policy[State]
             
             ######## STEP 4: CALCULATE TRANSITION STATE #################
             #Transition State: accounts for the change in the roster based on the action but is based on current rankings. 
             #If we are on the first iteration (i.e. no rollouts have happened, just use the first week's data) Otherwise, use the data of the previous iteration)
-            if i == 1
-                preRolloutInt = 1
-            else
-                preRolloutInt = i - 1
-            end
+            
+            preRolloutInt = i - 1
+            
             TransitionRank = Transition(Rank,Action)
             prevWeekData = Rollout(YearFileLocation, preRolloutInt, QB_Players, RB_Players, WR_Players)
             #Keep track of the new lineup we want, this will be converted to our new state after the rollout once we have new rankings 
@@ -146,17 +152,6 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
             Reward = CalculateReward(NextStateLineup, NextStateRank, Action, RolloutTable, CurrentStateLineup)
             push!(CumulativeReward, Reward)
 
-            ########## STEP 8: Q-LEARNING ###############
-            #Update Q Table
-            QLearning(Q,State,Action,Reward,NextState)
-
-            #Append the data text file with this iteration's information
-            #The ranks are dictionaries so need to convert to arrays for the output file
-            RankArray = [Rank["QB"],Rank["RB"],Rank["WR"]]
-            NextStateRankArray = [NextStateRank["QB"],NextStateRank["RB"],NextStateRank["WR"]]
-
-            # Store Qdata - Remember: columns are labeled: (State, Rank, Action, NextState, NextStateRankArray, Reward)
-            push!(Qdata, [State, string(RankArray), Action, NextState, string(NextStateRankArray), Reward])
 
             #Update State and Rank for next iteration
             State = copy(NextState)
@@ -164,20 +159,19 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
             Rank = copy(NextStateRank)
 
         end
-        push!(rewardStorage, sum(CumulativeReward))
+        #push!(rewardStorage, sum(CumulativeReward))
 
-    end
 
     #extract policy from Q
-    policy = [argmax(Q[i,:]) for i in 1:size(Q,1)]
-    policyData.State = 1:512
-    policyData.Action = policy
+    #policy = [argmax(Q[i,:]) for i in 1:size(Q,1)]
+    #policyData.State = 1:512
+    #policyData.Action = policy
 
     # Save dataframe info to files
-    CSV.write(DataFileName, Qdata)
-    CSV.write(PolicyFileName, policyData)
+    #CSV.write(DataFileName, Qdata)
+    #CSV.write(PolicyFileName, policyData)
 
-    CSV.write(rewardStorageFileName, DataFrame(reward = rewardStorage))
+    CSV.write(rewardStorageFileName, DataFrame(reward = CumulativeReward))
 
     # return Q, CumulativeReward
 end
@@ -441,7 +435,20 @@ function QLearning(Q,state,action,reward,next_state)
     Q[state,action] += alpha*(reward + gamma*maximum(Q[next_state,:]) - Q[state,action])
 end
 
+function loadPolicy(policyFileName)
+    # Load the file
+    mydata = CSV.read(policyFileName, DataFrame)
+    # Make array
+    mat = Matrix(mydata)
+    policy = mat[:,2]
+    return policy
+end
 
+function makeRandomPolicy(numStates, numActions)
+    # Generate an array of random actions of length numStates
+    policy  = rand(1:numActions, numStates)
+    return policy
+end
 #################
 # @time main()
 # main()
