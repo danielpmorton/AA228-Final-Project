@@ -416,5 +416,5 @@ end
 
 
 #################
-@time main()
+@time main_random()
 # main()
