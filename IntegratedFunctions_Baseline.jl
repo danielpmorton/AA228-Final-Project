@@ -38,7 +38,7 @@ include("stateJustRank.jl")
 
 function main()
     YearFileLocation = "newweekly/2017"
-    OutputFileName = "TestRun"
+    OutputFileName = "TestRun_Random"
     IntegratedFnc(YearFileLocation, OutputFileName)
 end
 
@@ -63,7 +63,7 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
     Rank = Dict{String, Int64}() # Initializing as empty dictionary with defined key => value types
     Qdata = DataFrame(State = Any[], Rank = Any[], Action = Any[], NextState = Any[], NextStateRankArray = Any[], Reward = Any[]) # Initialize a structure to store some data
     policyData = DataFrame()
-    numIterations = 300
+    numIterations = 1000
 
     #Initialize output textfiles
     DataFileName = OutputFileName * "_" * "Data" * ".csv"

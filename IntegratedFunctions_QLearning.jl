@@ -36,11 +36,11 @@ using Printf
 
 include("stateJustRank.jl") 
 
-function main()
-    YearFileLocation = "newweekly/2017"
-    OutputFileName = "TestRun"
-    IntegratedFnc(YearFileLocation, OutputFileName)
-end
+# function main()
+#     YearFileLocation = "newweekly/2017"
+#     OutputFileName = "TestRun"
+#     IntegratedFnc(YearFileLocation, OutputFileName)
+# end
 
 function incrementAverageRank(avgs, RolloutTable, weekNumber)
     # avgs will need to be initialized outside of this function, will be same format as rollout table
@@ -76,7 +76,7 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
     Rank = Dict{String, Int64}() # Initializing as empty dictionary with defined key => value types
     Qdata = DataFrame(State = Any[], Rank = Any[], Action = Any[], NextState = Any[], NextStateRankArray = Any[], Reward = Any[]) # Initialize a structure to store some data
     policyData = DataFrame()
-    numIterations = 300
+    numIterations = 1000
 
     #Initialize output textfiles
     DataFileName = OutputFileName * "_" * "Data" * ".csv"
@@ -103,8 +103,8 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
         
         CumulativeReward = []
 
-        # epsilon = 0.9
-        # alpha = 0.9
+        epsilon = 0.9
+        alpha = 0.9
 
         State = []
         CurrentStateLineup = Dict[]
@@ -456,5 +456,5 @@ end
 
 
 #################
-@time main()
+# @time main()
 # main()
