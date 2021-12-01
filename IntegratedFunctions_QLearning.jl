@@ -36,11 +36,11 @@ using Printf
 
 include("stateJustRank.jl") 
 
-# function main()
-#     YearFileLocation = "newweekly/2017"
-#     OutputFileName = "TestRun"
-#     IntegratedFnc(YearFileLocation, OutputFileName)
-# end
+function main()
+    YearFileLocation = "newweekly/2017"
+    OutputFileName = "TestRun"
+    IntegratedFnc(YearFileLocation, OutputFileName)
+end
 
 function incrementAverageRank(avgs, RolloutTable, weekNumber)
     # avgs will need to be initialized outside of this function, will be same format as rollout table
