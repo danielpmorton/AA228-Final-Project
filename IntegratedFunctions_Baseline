@@ -36,7 +36,7 @@ using Printf
 
 include("stateJustRank.jl") 
 
-function main()
+function main_random()
     YearFileLocation = "newweekly/2017"
     OutputFileName = "TestRun"
     IntegratedFnc(YearFileLocation, OutputFileName)
