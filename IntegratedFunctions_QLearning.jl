@@ -42,6 +42,19 @@ function main()
     IntegratedFnc(YearFileLocation, OutputFileName)
 end
 
+function incrementAverageRank(avgs, RolloutTable, weekNumber)
+    # avgs will need to be initialized outside of this function, will be same format as rollout table
+    # RolloutTable is a dataframe with columns player, ID, position, points
+    # 
+    for i = 1:size(avgs, 1)
+        name = avgs.player[i]
+        newpoints = RolloutTable[RolloutTable.player .== name, "points"]
+        oldAvg = avgs[i, "points"]
+        avgs[i,"points"] += (1/weekNumber)*(newpoints-oldAvg)
+    end
+
+    return avgs
+
 function IntegratedFnc(YearFileLocation, OutputFileName)
     #This function will define all of the inputs for Q-Learning (state, action, reward, and next state). In order to define the reward and next state, we need to conduct a rollout.
     #Example: IntegratedFnc("/Users/Documents/AA228/FinalProject/newweekly/2018", "TestRun")
