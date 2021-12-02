@@ -57,7 +57,7 @@ end
 function getPlayerRankings(lineup, currentWeekData)
     #=
     Description: Takes the most recent weekly data, ranks the players, and assigns a rank to the players in your lineup
-    Inputs:
+    Inputs: lineup (dictionary of position to player name), currentWeekData (dataframe with player, position, and points columns)
     Outputs: Dictionary mapping the positions => rank for the chosen player
     =#
     # Separate the data by position

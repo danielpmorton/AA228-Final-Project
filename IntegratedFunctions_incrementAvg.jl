@@ -36,15 +36,9 @@ using Printf
 
 include("stateJustRank.jl") 
 
-<<<<<<< HEAD
  function main()
     YearFileLocation = "dirtyweekly/2017"
      OutputFileName = "TestRun"
-=======
-function main()
-    YearFileLocation = "newweekly/2017"
-    OutputFileName = "TestRun"
->>>>>>> 3c9ea236555d9f3c81cd79cb9b97e0c6cd76ff38
     IntegratedFnc(YearFileLocation, OutputFileName)
 end
 
@@ -56,7 +50,7 @@ function incrementAverageRank(avgs, RolloutTable, weekNumber)
         name = avgs.player[i]
         newpoints = RolloutTable[RolloutTable.player .== name, "points"]
         oldAvg = avgs[i, "points"]
-        avgs[i,"points"] += (1/weekNumber)*(newpoints-oldAvg)
+        avgs[i,"points"] = avgs[i, "points"] + (1/weekNumber)*(newpoints[1]-oldAvg)
     end
 
     return avgs
@@ -83,7 +77,7 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
     Rank = Dict{String, Int64}() # Initializing as empty dictionary with defined key => value types
     Qdata = DataFrame(State = Any[], Rank = Any[], Action = Any[], NextState = Any[], NextStateRankArray = Any[], Reward = Any[]) # Initialize a structure to store some data
     policyData = DataFrame()
-    numIterations = 1000
+    numIterations = 500
 
     #Initialize output textfiles
     DataFileName = OutputFileName * "_" * "Data" * ".csv"
@@ -98,6 +92,7 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
 
     rewardStorage = []
     rewardStorageFileName = OutputFileName * "_" * "Rewards" * ".csv"
+    avgs = DataFrame()
     
     ####### BEGIN MEGA FOR LOOP ##################
     # Big for-loop: to populate the Q table with multiple runs through the season 
@@ -127,6 +122,7 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
                 #generate random lineup using week 1 data
                 CurrentStateLineup = makeRandomLineup(QB_Players, RB_Players, WR_Players)
                 currentWeekData = Rollout(YearFileLocation, 1, QB_Players, RB_Players, WR_Players)
+                avgs = copy(currentWeekData)
                 Rank = getPlayerRankings(CurrentStateLineup, currentWeekData)
                 State = makeState(Rank)
             end 
@@ -158,7 +154,8 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
 
             ######### STEP 6: CALCULATE NEXT STATE ################
             #Recalculate the state based on new rankings, Daniel's functions already do this:
-            NextStateRank = getPlayerRankings(NextStateLineup, RolloutTable)
+            NewAvgs = incrementAverageRank(avgs, RolloutTable, i)
+            NextStateRank = getPlayerRankings(NextStateLineup, NewAvgs)
             NextState = makeState(NextStateRank)
 
             ########## STEP 7: CALCULATE REWARD ##############
@@ -182,8 +179,12 @@ function IntegratedFnc(YearFileLocation, OutputFileName)
             State = copy(NextState)
             CurrentStateLineup = copy(NextStateLineup)
             Rank = copy(NextStateRank)
+            avgs = copy(NewAvgs)
 
+            #println("AVERAGE TABLE: ", avgs)
+            #println("ROLLOUT TABLE: ", RolloutTable)
         end
+        
         push!(rewardStorage, sum(CumulativeReward))
 
     end
