@@ -36,11 +36,11 @@ using Printf
 
 include("stateJustRank.jl") 
 
-# function main()
-#     YearFileLocation = "newweekly/2017"
-#     OutputFileName = "TestRun"
-#     IntegratedFnc(YearFileLocation, OutputFileName)
-# end
+ function main()
+    YearFileLocation = "dirtyweekly/2017"
+     OutputFileName = "TestRun"
+    IntegratedFnc(YearFileLocation, OutputFileName)
+end
 
 function incrementAverageRank(avgs, RolloutTable, weekNumber)
     # avgs will need to be initialized outside of this function, will be same format as rollout table
@@ -54,6 +54,7 @@ function incrementAverageRank(avgs, RolloutTable, weekNumber)
     end
 
     return avgs
+end
 
 function IntegratedFnc(YearFileLocation, OutputFileName)
     #This function will define all of the inputs for Q-Learning (state, action, reward, and next state). In order to define the reward and next state, we need to conduct a rollout.
@@ -456,5 +457,5 @@ end
 
 
 #################
-# @time main()
+@time main()
 # main()
